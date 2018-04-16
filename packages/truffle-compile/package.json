@@ -11,7 +11,12 @@
     "truffle-config": "^1.0.6",
     "truffle-contract-sources": "^0.0.2",
     "truffle-error": "^0.0.3",
-    "truffle-expect": "^0.0.4"
+    "truffle-expect": "^0.0.4",
+    "find-cache-dir": "^1.0.0",
+    "original-require": "^1.0.1",
+    "request": "^2.85.0",
+    "request-promise": "^4.2.2",
+    "require-from-string": "^2.0.2",
   },
   "devDependencies": {
     "mocha": "5.2.0",
