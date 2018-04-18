@@ -24,7 +24,7 @@
     "tmp": "0.0.33",
     "request": "^2.85.0",
     "request-promise": "^4.2.2",
-    "require-from-string": "^2.0.2",
+    "require-from-string": "^2.0.2"
   },
   "babel": {
     "presets": [
