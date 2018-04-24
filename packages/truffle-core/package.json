@@ -77,6 +77,7 @@
   "devDependencies": {
     "ipfsd-ctl": "^0.21.0",
     "truffle-blockchain-utils": "^0.0.5"
+    "memorystream": "^0.3.1",
   },
   "publishConfig": {
     "access": "public"
