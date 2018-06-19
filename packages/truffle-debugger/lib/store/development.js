@@ -7,20 +7,19 @@ import commonConfigure from "./common";
 
 export default function configureStore (reducer, saga, initialState) {
   const composeEnhancers = composeWithDevTools({
-    realtime: false,
+    realtime: true,
     actionsBlacklist: [
       "RECEIVE_TRACE", "SCOPE", "DECLARE_VARIABLE",
-      "ASSIGN", "ADVANCE", "SAVE_STEPS", "BEGIN_STEP", "NEXT"
+      "ASSIGN", "SAVE_STEPS", "BEGIN_STEP",
     ],
     stateSanitizer: (state) => ({
-      // session: state.session,
-      // context: state.context,
+      // ast: state.ast,
+      session: state.session,
       // evm: state.evm,
       // solidity: state.solidity,
       // data: state.data,
     }),
 
-    startOn: "SESSION_READY",
     name: "truffle-debugger",
     hostname: "localhost",
     port: 11117
