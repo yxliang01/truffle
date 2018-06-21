@@ -2583,12 +2583,6 @@ dateformat@^3.0.0, dateformat@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
 
-debug@2.6.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.0.tgz#bc596bcabe7617f11d9fa15361eded5608b8499b"
-  dependencies:
-    ms "0.7.2"
-
 debug@2.6.8:
   version "2.6.8"
   resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.8.tgz#e731531ca2ede27d188222427da17821d68ff4fc"
@@ -7026,7 +7020,7 @@ mocha-webpack@^1.1.0:
     toposort "^1.0.0"
     yargs "^4.8.0"
 
-mocha@5.2.0:
+mocha@5.2.0, mocha@^5.2.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/mocha/-/mocha-5.2.0.tgz#6d8ae508f59167f940f2b5b3c4a612ae50c90ae6"
   dependencies:
@@ -8054,13 +8048,6 @@ promise@~1.3.0:
 promisify-es6@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/promisify-es6/-/promisify-es6-1.0.3.tgz#b012668c4df3c965ce13daac2b3a4d1726a96346"
-
-promisify-node@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/promisify-node/-/promisify-node-0.4.0.tgz#32803874ec411784e4786c339902a87a179a469c"
-  dependencies:
-    nodegit-promise "~4.0.0"
-    object-assign "^4.0.1"
 
 prompt-sync@^4.1.5:
   version "4.1.6"
@@ -9351,16 +9338,6 @@ socketcluster@^6.7.1:
     uid-number "0.0.5"
     uuid "3.1.0"
 
-solc@0.4.23:
-  version "0.4.23"
-  resolved "https://registry.yarnpkg.com/solc/-/solc-0.4.23.tgz#54a0ff4015827b32fddb62c0a418b5247310a58e"
-  dependencies:
-    fs-extra "^0.30.0"
-    memorystream "^0.3.1"
-    require-from-string "^1.1.0"
-    semver "^5.3.0"
-    yargs "^4.7.1"
-
 solc@0.4.24, solc@^0.4.2:
   version "0.4.24"
   resolved "https://registry.yarnpkg.com/solc/-/solc-0.4.24.tgz#354f14b269b38cbaa82a47d1ff151723502b954e"
@@ -10143,6 +10120,10 @@ truffle-contract@^2.0.3:
     truffle-blockchain-utils "^0.0.3"
     truffle-contract-schema "^0.0.5"
     web3 "^0.20.1"
+
+truffle-expect@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/truffle-expect/-/truffle-expect-0.0.3.tgz#9b75cef343bd596e7e5dbc878f5f1b2e318a944c"
 
 truffle-init@^1.0.7:
   version "1.0.7"
