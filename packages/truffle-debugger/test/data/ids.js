@@ -14,7 +14,7 @@ import solidity from "lib/solidity/selectors";
 import * as TruffleDecodeUtils from "truffle-decode-utils";
 
 const __FACTORIAL = `
-pragma solidity ^0.4.24;
+pragma solidity ~0.5;
 
 contract FactorialTest {
 
@@ -41,7 +41,7 @@ contract FactorialTest {
 `;
 
 const __ADDRESS = `
-pragma solidity ^0.4.25;
+pragma solidity ~0.5;
 
 contract AddressTest {
 
@@ -79,7 +79,7 @@ contract SecretByte {
 `;
 
 const __INTERVENING = `
-pragma solidity ^0.4.25;
+pragma solidity ~0.5;
 
 import "./InterveningLib.sol";
 
@@ -127,7 +127,7 @@ contract Inner {
 `;
 
 const __INTERVENINGLIB = `
-pragma solidity ^0.4.25;
+pragma solidity ~0.5;
 
 library InterveningLib {
   

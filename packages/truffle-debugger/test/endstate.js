@@ -14,7 +14,7 @@ import data from "lib/data/selectors";
 import * as TruffleDecodeUtils from "truffle-decode-utils";
 
 const __FAILURE = `
-pragma solidity ^0.4.24;
+pragma solidity ~0.5;
 
 contract FailureTest {
   function run() {
@@ -24,7 +24,7 @@ contract FailureTest {
 `;
 
 const __SUCCESS = `
-pragma solidity ^0.4.24;
+pragma solidity ~0.5;
 
 contract SuccessTest {
 uint x;

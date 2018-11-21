@@ -6,7 +6,7 @@ import { prepareContracts } from "./helpers";
 import Debugger from "lib/debugger";
 
 const __SETSTHINGS = `
-pragma solidity ^0.4.24;
+pragma solidity ~0.5;
 
 contract SetsThings {
   int x;
