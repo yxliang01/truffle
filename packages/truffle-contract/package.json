@@ -9,7 +9,7 @@
     "test": "./scripts/test.sh",
     "test:debug": "$(npm bin)/mocha --inspect-brk",
     "test:trace": "$(npm bin)/mocha --trace-warnings",
-    "compile": "mkdir -p dist && browserify ./index.js -i web3 -o ./dist/truffle-contract.js && uglifyjs ./dist/truffle-contract.js -o ./dist/truffle-contract.min.js"
+    "compile": "mkdir -p dist && browserify ./index.js -i ethers -i web3 -o ./dist/truffle-contract.js && uglifyjs ./dist/truffle-contract.js -o ./dist/truffle-contract.min.js"
   },
   "repository": {
     "type": "git",
@@ -52,7 +52,7 @@
     "lodash": "4.17.10",
     "mocha": "5.2.0",
     "require-nocache": "^1.0.0",
-    "solc": "0.4.25",
+    "solc": "^0.5.0",
     "temp": "^0.8.3"
   },
   "publishConfig": {
