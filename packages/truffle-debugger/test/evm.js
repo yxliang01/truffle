@@ -35,7 +35,7 @@ contract Outer {
 `;
 
 const __INNER = `
-pragma solidity ^0.4.18;
+pragma solidity ~0.5;
 
 contract Inner {
   function run() public {

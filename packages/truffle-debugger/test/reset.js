@@ -13,7 +13,7 @@ contract SetsThings {
   int y;
   int z;
   int w;
-  function run() {
+  function public run() {
     x = 1;
     y = 2;
     z = 3;
