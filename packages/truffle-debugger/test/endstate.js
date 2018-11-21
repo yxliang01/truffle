@@ -17,7 +17,7 @@ const __FAILURE = `
 pragma solidity ~0.5;
 
 contract FailureTest {
-  function public run() {
+  function run() public {
     revert();
   }
 }
@@ -28,7 +28,7 @@ pragma solidity ~0.5;
 
 contract SuccessTest {
 uint x;
-  function public run() {
+  function run() public {
     x = 107;
   }
 }

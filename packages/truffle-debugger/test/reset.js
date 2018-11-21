@@ -9,11 +9,11 @@ const __SETSTHINGS = `
 pragma solidity ~0.5;
 
 contract SetsThings {
-  int x;
-  int y;
-  int z;
-  int w;
-  function public run() {
+  int private x;
+  int private y;
+  int private z;
+  int private w;
+  function run() public {
     x = 1;
     y = 2;
     z = 3;
