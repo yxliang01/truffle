@@ -1,0 +1,100 @@
+scalar Address
+scalar NetworkID
+scalar TransactionHash
+scalar Value
+scalar Bytes
+scalar ABI
+scalar Object
+scalar AST
+scalar ByteOffset
+scalar FileIndex
+
+type ContractInstance {
+  address: Address!
+  network: Network!
+  transactionHash: TransactionHash!
+  constructorArgs: [Value]!
+  contractType: ContractType!
+  callBytecode: Bytecode!
+  linkValues: [LinkValue]!
+}
+
+type ContractType {
+  name: String!
+  abi: ABI!
+  compilation: Compilation
+  createBytecode: Bytecode
+}
+
+type Network {
+  name: String
+  networkID: NetworkID
+}
+
+type LinkValue {
+  linkReference: LinkReference!
+  value: Bytes
+}
+
+type LinkReference {
+  offsets: [ByteOffset]!
+  length: Int!
+}
+
+type ContractTypes {
+  contractTypes: [ContractType]!
+}
+
+type Bytecode {
+  bytes: Bytes!
+  sourceMap: SourceMap
+  linkReferences: [LinkReference]!
+}
+
+type SourceMap {
+  sourceRange(offset: ByteOffset!): SourceRange
+  sources: Sources
+}
+
+type SourceRange {
+  source: Source!
+  start: ByteOffset!
+  length: Int!
+  meta: SourceRangeMeta!
+}
+
+type Sources {
+  source(index: FileIndex!): Source
+}
+
+type Source {
+  sourcePath: String
+  source: String!
+  ast: AST
+}
+
+type Compilation {
+  compiler: Compiler!
+  contractTypes: ContractTypes!
+  sources: Sources!
+}
+
+type Compiler {
+  name: String
+  version: String
+  settings: Object
+}
+
+type SourceRangeMeta {
+  jump: JumpDirection
+}
+
+enum JumpDirection {
+  IN
+  OUT
+}
+
+
+type Query {
+  resolve(name: String!): ContractType
+}

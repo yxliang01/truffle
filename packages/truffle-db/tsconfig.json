@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "sourceMap": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "lib": ["esnext"],
+    "target": "es6",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "outDir": "./lib",
+    "paths": {
+      "truffle-db": ["./src"],
+      "truffle-db/*": ["./src/*"]
+    },
+    "baseUrl": "."
+  }
+}
