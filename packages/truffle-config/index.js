@@ -64,6 +64,8 @@ function Config(truffle_directory, working_directory, network) {
     }
   };
 
+  this._customContractFields = {};
+
   const resolveDirectory = value => path.resolve(self.working_directory, value);
 
   var props = {
@@ -261,6 +263,32 @@ function Config(truffle_directory, working_directory, network) {
         throw new Error(
           "Don't set config.skipDryRun directly. Instead, set config.networks and then config.networks[<network name>].skipDryRun"
         );
+      }
+    },
+    customContractFields: {
+      get: function() {
+        return self._customContractFields;
+      },
+      set: function(value) {
+        if (value == null || typeof value !== "object") {
+          self._customContractFields = {};
+        } else {
+          const fieldNames = Object.keys(value);
+
+          for (let i = 0; i < fieldNames.length; i++) {
+            const fieldName = fieldNames[i];
+            const fieldRequired = value[fieldName];
+
+            if (typeof fieldRequired !== "boolean") {
+              // TODO: This error doesn't stop truffle? where else can i do validation?
+              throw new Error(
+                `Custom Contract Field '${fieldName}' must be a boolean, but it's currently set to '${fieldRequired}'.`
+              );
+            }
+          }
+
+          self._customContractFields = value;
+        }
       }
     }
   };

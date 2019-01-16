@@ -116,6 +116,10 @@ module.exports = {
       returnVal.events = {};
     }
 
+    if (returnVal.customContractFields == null) {
+      returnVal.customContractFields = {};
+    }
+
     return returnVal;
   },
   networks: function() {
@@ -198,6 +202,31 @@ module.exports = {
     }
 
     return this.network.links || {};
+  },
+  customContractFields: {
+    get: function() {
+      var customContractFields = this.network.customContractFields;
+
+      if (customContractFields == null) {
+        var error =
+          "Cannot find deployed customContractFields: " +
+          this.contractName +
+          " not deployed or customContractFields not set.";
+        throw new Error(error);
+      }
+
+      return customContractFields;
+    },
+    set: function(val) {
+      if (val == null) {
+        throw new Error(
+          "Cannot set deployed customContractFields; malformed value: " + val
+        );
+      }
+
+      // `this.network` will create the network if it doesnt exist
+      this.network.customContractFields = val;
+    }
   },
   events: function() {
     // helper web3; not used for provider
