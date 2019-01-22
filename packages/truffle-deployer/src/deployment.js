@@ -272,10 +272,10 @@ class Deployment {
    *
    * @param  {Object} contract                Contract abstraction
    * @param  {Array}  args                    Constructor arguments
-   * @param  {Array}  [customContractFields]  Constructor arguments
+   * @param  {Array}  [payloadExtension]  Constructor arguments
    * @return {Promise}                        Resolves an instance
    */
-  executeDeployment(contract, args, customContractFields) {
+  executeDeployment(contract, args, payloadExtension) {
     const self = this;
 
     return async function() {
@@ -387,7 +387,7 @@ class Deployment {
       // Finish: Ensure the address and tx-hash are set on the contract.
       contract.address = instance.address;
       contract.transactionHash = instance.transactionHash;
-      contract.customContractFields = customContractFields || {};
+      contract.payloadExtension = payloadExtension || {};
       return instance;
     };
   }

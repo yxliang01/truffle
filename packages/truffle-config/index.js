@@ -61,10 +61,9 @@ function Config(truffle_directory, working_directory, network) {
     },
     logger: {
       log: function() {}
-    }
+    },
+    payloadExtension: {}
   };
-
-  this._customContractFields = {};
 
   const resolveDirectory = value => path.resolve(self.working_directory, value);
 
@@ -265,13 +264,13 @@ function Config(truffle_directory, working_directory, network) {
         );
       }
     },
-    customContractFields: {
+    payloadExtension: {
       get: function() {
-        return self._customContractFields;
+        return self._values.payloadExtension;
       },
       set: function(value) {
         if (value == null || typeof value !== "object") {
-          self._customContractFields = {};
+          self._values.payloadExtension = {};
         } else {
           const fieldNames = Object.keys(value);
 
@@ -287,7 +286,7 @@ function Config(truffle_directory, working_directory, network) {
             }
           }
 
-          self._customContractFields = value;
+          self._values.payloadExtension = value;
         }
       }
     }

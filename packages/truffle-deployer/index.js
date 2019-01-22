@@ -21,7 +21,7 @@ class Deployer extends Deployment {
     this.provider = options.provider;
     this.basePath = options.basePath || process.cwd();
     this.known_contracts = {};
-    this.customContractFields = options.customContractFields || {};
+    this.payloadExtension = options.payloadExtension || {};
 
     (options.contracts || []).forEach(
       contract => (this.known_contracts[contract.contract_name] = contract)
@@ -38,21 +38,21 @@ class Deployer extends Deployment {
     return this.queueOrExec(link(library, destinations, this));
   }
 
-  hasCustomContractFields() {
+  haspayloadExtension() {
     return (
-      this.customContractFields && typeof this.customContractFields === "object"
+      this.payloadExtension && typeof this.payloadExtension === "object"
     ); /* &&
-      Object.keys(this.customContractFields).length > 0;*/
+      Object.keys(this.payloadExtension).length > 0;*/
   }
 
-  getCustomContractFields(contract, values) {
+  getpayloadExtension(contract, values) {
     let filteredFields = {};
 
-    if (this.hasCustomContractFields()) {
-      const fieldNames = Object.keys(this.customContractFields);
+    if (this.haspayloadExtension()) {
+      const fieldNames = Object.keys(this.payloadExtension);
       for (let i = 0; i < fieldNames.length; i++) {
         const fieldName = fieldNames[i];
-        const fieldRequired = this.customContractFields[fieldName];
+        const fieldRequired = this.payloadExtension[fieldName];
 
         if (fieldRequired && typeof values[fieldName] === "undefined") {
           throw new Error(
@@ -72,17 +72,17 @@ class Deployer extends Deployment {
     const args = Array.prototype.slice.call(arguments);
     const contract = args.shift();
 
-    let customContractFields = {};
-    if (this.hasCustomContractFields()) {
+    let payloadExtension = {};
+    if (this.haspayloadExtension()) {
       const customContractFieldValues = args.shift();
-      customContractFields = this.getCustomContractFields(
+      payloadExtension = this.getpayloadExtension(
         contract,
         customContractFieldValues
       );
     }
 
     return this.queueOrExec(
-      this.executeDeployment(contract, args, customContractFields, this)
+      this.executeDeployment(contract, args, payloadExtension, this)
     );
   }
 

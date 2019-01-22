@@ -116,8 +116,8 @@ module.exports = {
       returnVal.events = {};
     }
 
-    if (returnVal.customContractFields == null) {
-      returnVal.customContractFields = {};
+    if (returnVal.payloadExtension == null) {
+      returnVal.payloadExtension = {};
     }
 
     return returnVal;
@@ -203,29 +203,29 @@ module.exports = {
 
     return this.network.links || {};
   },
-  customContractFields: {
+  payloadExtension: {
     get: function() {
-      var customContractFields = this.network.customContractFields;
+      var payloadExtension = this.network.payloadExtension;
 
-      if (customContractFields == null) {
+      if (payloadExtension == null) {
         var error =
-          "Cannot find deployed customContractFields: " +
+          "Cannot find deployed payloadExtension: " +
           this.contractName +
-          " not deployed or customContractFields not set.";
+          " not deployed or payloadExtension not set.";
         throw new Error(error);
       }
 
-      return customContractFields;
+      return payloadExtension;
     },
     set: function(val) {
       if (val == null) {
         throw new Error(
-          "Cannot set deployed customContractFields; malformed value: " + val
+          "Cannot set deployed payloadExtension; malformed value: " + val
         );
       }
 
       // `this.network` will create the network if it doesnt exist
-      this.network.customContractFields = val;
+      this.network.payloadExtension = val;
     }
   },
   events: function() {

@@ -120,10 +120,7 @@ var execute = {
         let result;
         try {
           await constructor.detectNetwork();
-          params = utils.merge(
-            constructor.network.customContractFields,
-            params
-          );
+          params = utils.merge(constructor.network.payloadExtension, params);
           args = utils.convertToEthersBN(args);
           result = await fn(...args).call(params, defaultBlock);
           result = reformat.numbers.call(
