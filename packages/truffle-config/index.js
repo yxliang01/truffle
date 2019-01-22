@@ -276,12 +276,21 @@ function Config(truffle_directory, working_directory, network) {
 
           for (let i = 0; i < fieldNames.length; i++) {
             const fieldName = fieldNames[i];
-            const fieldRequired = value[fieldName];
+            const fieldValue = value[fieldName];
 
-            if (typeof fieldRequired !== "boolean") {
+            if (fieldValue == null || typeof fieldValue !== "object") {
               // TODO: This error doesn't stop truffle? where else can i do validation?
               throw new Error(
-                `Custom Contract Field '${fieldName}' must be a boolean, but it's currently set to '${fieldRequired}'.`
+                `Payload Extension Field '${fieldName}' must be an object, but it's currently set to '${fieldValue}'.`
+              );
+            }
+
+            if (typeof fieldValue.required !== "boolean") {
+              // TODO: This error doesn't stop truffle? where else can i do validation?
+              throw new Error(
+                `Payload Extension Field '${fieldName}.required' must be a boolean, but it's currently set to '${
+                  fieldValue.required
+                }'.`
               );
             }
           }

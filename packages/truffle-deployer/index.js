@@ -38,25 +38,25 @@ class Deployer extends Deployment {
     return this.queueOrExec(link(library, destinations, this));
   }
 
-  haspayloadExtension() {
+  hasPayloadExtension() {
     return (
       this.payloadExtension && typeof this.payloadExtension === "object"
     ); /* &&
       Object.keys(this.payloadExtension).length > 0;*/
   }
 
-  getpayloadExtension(contract, values) {
+  getPayloadExtension(contract, values) {
     let filteredFields = {};
 
-    if (this.haspayloadExtension()) {
+    if (this.hasPayloadExtension()) {
       const fieldNames = Object.keys(this.payloadExtension);
       for (let i = 0; i < fieldNames.length; i++) {
         const fieldName = fieldNames[i];
-        const fieldRequired = this.payloadExtension[fieldName];
+        const fieldRequired = this.payloadExtension[fieldName].required;
 
         if (fieldRequired && typeof values[fieldName] === "undefined") {
           throw new Error(
-            `Custom Contract Field '${fieldName}' is required and wasn't
+            `Payload Extension Field '${fieldName}' is required and wasn't
             specified during deployment of contract ${contract.contractName}.`
           );
         }
@@ -73,11 +73,11 @@ class Deployer extends Deployment {
     const contract = args.shift();
 
     let payloadExtension = {};
-    if (this.haspayloadExtension()) {
-      const customContractFieldValues = args.shift();
-      payloadExtension = this.getpayloadExtension(
+    if (this.hasPayloadExtension()) {
+      const payloadExtensionValues = args.shift();
+      payloadExtension = this.getPayloadExtension(
         contract,
-        customContractFieldValues
+        payloadExtensionValues
       );
     }
 
