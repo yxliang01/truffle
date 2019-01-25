@@ -76,7 +76,7 @@ contract Example {
     value = val * multiplier;
   }
 
-  function parrot(uint val) public returns(uint) {
+  function parrot(uint val) public pure returns(uint) {
     return val;
   }
 
@@ -100,15 +100,15 @@ contract Example {
     emit NumberEvent(a,b,c,d,e);
   }
 
-  function triggerRequireError() public {
+  function triggerRequireError() public pure {
     require(false);
   }
 
-  function triggerAssertError() public {
+  function triggerAssertError() public pure {
     assert(false);
   }
 
-  function triggerRequireWithReasonError() public {
+  function triggerRequireWithReasonError() public pure {
     require(false, 'reasonstring');
   }
 
@@ -130,7 +130,7 @@ contract Example {
 
   function returnsNamedTuple()
     public
-    view
+    pure
     returns (
       uint256 hello,
       string memory black,
@@ -142,7 +142,7 @@ contract Example {
 
   function returnsUnnamedTuple()
     public
-    view
+    pure
     returns (string memory, uint, uint[2] memory)
   {
     uint[2] memory arr;
@@ -151,13 +151,13 @@ contract Example {
     return ('hello', 5, arr);
   }
 
-  function returnsInt() public view returns (int){
+  function returnsInt() public pure returns (int){
     return 5;
   }
 
   function returnsNamedStaticArray()
     public
-    view
+    pure
     returns (uint[2] memory named)
   {
     uint[2] memory arr;
@@ -168,7 +168,7 @@ contract Example {
 
   function returnsUnnamedStaticArray()
     public
-    view
+    pure
     returns (uint[2] memory)
   {
     uint[2] memory arr;
