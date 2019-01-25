@@ -1,5 +1,5 @@
 const utils = require("../utils");
-const Web3 = require("web3");
+const web3Utils = require("web3-utils");
 
 module.exports = {
   contract_name: {
@@ -232,9 +232,6 @@ module.exports = {
     }
   },
   events: function() {
-    // helper web3; not used for provider
-    var web3 = new Web3();
-
     var events;
 
     if (this._json.networks[this.network_id] == null) {
@@ -264,7 +261,7 @@ module.exports = {
 
         signature += ")";
 
-        var topic = web3.utils.keccak256(signature);
+        var topic = web3Utils.keccak256(signature);
 
         events[topic] = item;
       }
