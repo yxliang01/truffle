@@ -31,31 +31,33 @@ describe.only("Payload Extension", function() {
 
   describe("Deployment", function() {
     it("deploys with only required fields", async function() {
-      const payloadExtension = {a: "hello", b: "world"};
+      const payloadExtension = { a: "hello", b: "world" };
       const instance = await Example.new(payloadExtension, 1);
       assert.deepEqual(instance.payloadExtension, payloadExtension);
     });
 
     it("fails to deploy with a missing required field", async function() {
-      const payloadExtension = {a: "hello", c: "world"};
+      const payloadExtension = { a: "hello", c: "world" };
       try {
         await Example.new(payloadExtension, 1);
-      }
-      catch(e) {
-        assert.equal(e.message, "Payload Extension Field 'b' is required and wasn't specified during deployment of contract Example.");
+      } catch (e) {
+        assert.equal(
+          e.message,
+          "Payload Extension Field 'b' is required and wasn't specified during deployment of contract Example."
+        );
         return;
       }
       assert.fail("Deployed when it should have failed due to mising 'b'");
     });
 
     it("deploys with required and optional fields", async function() {
-      const payloadExtension = {a: "hello", b: "world", c: "foo"};
+      const payloadExtension = { a: "hello", b: "world", c: "foo" };
       const instance = await Example.new(payloadExtension, 1);
       assert.deepEqual(instance.payloadExtension, payloadExtension);
     });
 
     it("deploys with extra field, but filters it out", async function() {
-      let payloadExtension = {a: "hello", b: "world", d: "foo"};
+      let payloadExtension = { a: "hello", b: "world", d: "foo" };
       const instance = await Example.new(payloadExtension, 1);
       delete payloadExtension.d;
       assert.deepEqual(instance.payloadExtension, payloadExtension);
@@ -66,7 +68,7 @@ describe.only("Payload Extension", function() {
     let instance;
 
     before(async function() {
-      instance = await Example.new({a: "hello", b: "world"}, 1);
+      instance = await Example.new({ a: "hello", b: "world" }, 1);
     });
 
     it("supports eth_call", async function() {
