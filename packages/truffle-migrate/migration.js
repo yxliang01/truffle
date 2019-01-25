@@ -169,8 +169,7 @@ class Migration {
       network: options.network,
       network_id: options.network_id,
       provider: options.provider,
-      basePath: path.dirname(self.file),
-      payloadExtension: options.payloadExtension
+      basePath: path.dirname(self.file)
     });
 
     // Connect reporter to this migration

@@ -62,7 +62,7 @@ function Config(truffle_directory, working_directory, network) {
     logger: {
       log: function() {}
     },
-    payloadExtension: {}
+    payloadExtensionConfig: {}
   };
 
   const resolveDirectory = value => path.resolve(self.working_directory, value);
@@ -264,13 +264,13 @@ function Config(truffle_directory, working_directory, network) {
         );
       }
     },
-    payloadExtension: {
+    payloadExtensionConfig: {
       get: function() {
-        return self._values.payloadExtension;
+        return self._values.payloadExtensionConfig;
       },
       set: function(value) {
         if (value == null || typeof value !== "object") {
-          self._values.payloadExtension = {};
+          self._values.payloadExtensionConfig = {};
         } else {
           const fieldNames = Object.keys(value);
 
@@ -280,22 +280,22 @@ function Config(truffle_directory, working_directory, network) {
 
             if (fieldValue == null || typeof fieldValue !== "object") {
               // TODO: This error doesn't stop truffle? where else can i do validation?
-              throw new Error(
-                `Payload Extension Field '${fieldName}' must be an object, but it's currently set to '${fieldValue}'.`
-              );
+              const errorMessage = `Payload Extension Field '${fieldName}' must be an object,
+                but it's currently set to '${fieldValue}'.`;
+              throw new Error(errorMessage.replace(/\s+/g, " ").trim());
             }
 
             if (typeof fieldValue.required !== "boolean") {
               // TODO: This error doesn't stop truffle? where else can i do validation?
-              throw new Error(
-                `Payload Extension Field '${fieldName}.required' must be a boolean, but it's currently set to '${
+              const errorMessage = `Payload Extension Field '${fieldName}.required'
+                must be a boolean, but it's currently set to '${
                   fieldValue.required
-                }'.`
-              );
+                }'.`;
+              throw new Error(errorMessage.replace(/\s+/g, " ").trim());
             }
           }
 
-          self._values.payloadExtension = value;
+          self._values.payloadExtensionConfig = value;
         }
       }
     }

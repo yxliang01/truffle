@@ -21,7 +21,6 @@ class Deployer extends Deployment {
     this.provider = options.provider;
     this.basePath = options.basePath || process.cwd();
     this.known_contracts = {};
-    this.payloadExtension = options.payloadExtension || {};
 
     (options.contracts || []).forEach(
       contract => (this.known_contracts[contract.contract_name] = contract)
@@ -38,52 +37,11 @@ class Deployer extends Deployment {
     return this.queueOrExec(link(library, destinations, this));
   }
 
-  hasPayloadExtension() {
-    return (
-      this.payloadExtension && typeof this.payloadExtension === "object"
-    ); /* &&
-      Object.keys(this.payloadExtension).length > 0;*/
-  }
-
-  getPayloadExtension(contract, values) {
-    let filteredFields = {};
-
-    if (this.hasPayloadExtension()) {
-      const fieldNames = Object.keys(this.payloadExtension);
-      for (let i = 0; i < fieldNames.length; i++) {
-        const fieldName = fieldNames[i];
-        const fieldRequired = this.payloadExtension[fieldName].required;
-
-        if (fieldRequired && typeof values[fieldName] === "undefined") {
-          throw new Error(
-            `Payload Extension Field '${fieldName}' is required and wasn't
-            specified during deployment of contract ${contract.contractName}.`
-          );
-        }
-
-        filteredFields[fieldName] = values[fieldName];
-      }
-    }
-
-    return filteredFields;
-  }
-
   deploy() {
     const args = Array.prototype.slice.call(arguments);
     const contract = args.shift();
 
-    let payloadExtension = {};
-    if (this.hasPayloadExtension()) {
-      const payloadExtensionValues = args.shift();
-      payloadExtension = this.getPayloadExtension(
-        contract,
-        payloadExtensionValues
-      );
-    }
-
-    return this.queueOrExec(
-      this.executeDeployment(contract, args, payloadExtension, this)
-    );
+    return this.queueOrExec(this.executeDeployment(contract, args, this));
   }
 
   new() {

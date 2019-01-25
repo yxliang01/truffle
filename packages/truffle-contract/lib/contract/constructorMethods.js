@@ -42,6 +42,26 @@ module.exports = Contract => {
 
       var args = Array.prototype.slice.call(arguments);
 
+      let filteredPayloadExtension = {};
+      if (this.hasPayloadExtension()) {
+        const payloadExtensionValues = args.shift();
+        if (
+          payloadExtensionValues == null ||
+          typeof payloadExtensionValues !== "object"
+        ) {
+          throw new Error(`The 'payloadExtension' field was specified in the configuration,
+          which requires the second argument to deployer.deploy() for contract ${
+            constructor.contractName
+          }
+          to be an object with keys-values of the required payloadExtension fields.`);
+        }
+        filteredPayloadExtension = this.getFilteredPayloadExtension(
+          constructor,
+          payloadExtensionValues
+        );
+      }
+      constructor.payloadExtension = filteredPayloadExtension;
+
       // Promievent and flag that allows instance to resolve (rather than just receipt)
       var context = {
         contract: constructor,
@@ -374,6 +394,47 @@ module.exports = Contract => {
 
     toJSON: function() {
       return this._json;
+    },
+
+    setPayloadExtensionConfig: function(payloadExtensionConfig) {
+      this.payloadExtensionConfig = payloadExtensionConfig;
+    },
+
+    hasPayloadExtension() {
+      return (
+        this.payloadExtensionConfig &&
+        typeof this.payloadExtensionConfig === "object" &&
+        Object.keys(this.payloadExtensionConfig).length > 0
+      );
+    },
+
+    getFilteredPayloadExtension(contract, values) {
+      let filteredFields = {};
+
+      if (this.hasPayloadExtension()) {
+        const fieldNames = Object.keys(this.payloadExtensionConfig);
+        for (let i = 0; i < fieldNames.length; i++) {
+          const fieldName = fieldNames[i];
+          const fieldRequired = this.payloadExtensionConfig[fieldName].required;
+
+          if (fieldRequired && typeof values[fieldName] === "undefined") {
+            const errorMessage = `Payload Extension Field '${fieldName}' is required and wasn't
+              specified during deployment of contract ${
+                contract.contractName
+              }.`;
+            throw new Error(errorMessage.replace(/\s+/g, " ").trim());
+          }
+
+          if (!fieldRequired && typeof values[fieldName] === "undefined") {
+            // undefined optional fields should not be added
+            continue;
+          }
+
+          filteredFields[fieldName] = values[fieldName];
+        }
+      }
+
+      return filteredFields;
     },
 
     decodeLogs: utils.decodeLogs
