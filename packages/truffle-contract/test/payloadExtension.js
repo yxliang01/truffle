@@ -1,9 +1,10 @@
 const assert = require("assert");
 const util = require("./util");
+const EventEmitter = require("events");
 
 describe.only("Payload Extension", function() {
   let Example;
-  let web3;
+  // let web3;
   let server;
   const port = 12345;
   var providerOptions = { vmErrorsOnRPCResponse: false };
@@ -66,13 +67,58 @@ describe.only("Payload Extension", function() {
 
   describe("RPC Support", function() {
     let instance;
+    // let creationTransaction;
+    const ee = new EventEmitter();
+    const payloadExtension = { a: "hello", b: "world" };
+
+    const expect = function(method, done) {
+      ee.once("transaction", function(data) {
+        try {
+          assert.equal(data.method, method);
+          assert.equal(data.txJsonRpc.a, payloadExtension.a);
+          assert.equal(data.txJsonRpc.b, payloadExtension.b);
+          done();
+        } catch (e) {
+          done(e);
+        }
+      });
+    };
 
     before(async function() {
-      instance = await Example.new({ a: "hello", b: "world" }, 1);
+      instance = await Example.new(payloadExtension, 1);
+      // creationTransaction = await web3.eth.getTransaction(
+      //   instance.transactionHash
+      // );
+
+      // Need to duck punch to report what was received in the JSON RPC payload
+      const _queueTransaction = server.provider.manager.state.queueTransaction;
+      server.provider.manager.state.queueTransaction = function() {
+        ee.emit("transaction", {
+          method: arguments[0],
+          txJsonRpc: arguments[1]
+        });
+        return _queueTransaction.apply(
+          server.provider.manager.state,
+          arguments
+        );
+      };
     });
 
-    it("supports eth_call", async function() {
-      //
+    it("supports eth_call", function(done) {
+      expect("eth_call", done);
+      instance.value.call();
+    });
+
+    it("supports eth_estimateGas", function(done) {
+      expect("eth_estimateGas", done);
+      instance.setValue.estimateGas(1);
+    });
+
+    it("supports eth_sendTransaction", function(done) {
+      expect("eth_estimateGas", function() {
+        expect("eth_sendTransaction", done);
+      });
+      instance.setValue.sendTransaction(1);
     });
   });
 

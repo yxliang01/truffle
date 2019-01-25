@@ -20,6 +20,8 @@ var execute = {
     var constructor = this;
     var web3 = this.web3;
 
+    params = utils.merge(constructor.payloadExtension, params);
+
     return new Promise(function(accept) {
       // Always prefer specified gas - this includes gas set by class_defaults
       if (params.gas) return accept(params.gas);
@@ -53,6 +55,7 @@ var execute = {
   prepareCall: function(constructor, methodABI, _arguments) {
     var args = Array.prototype.slice.call(_arguments);
     var params = utils.getTxParams.call(constructor, methodABI, args);
+    params = utils.merge(constructor.payloadExtension, params);
 
     args = utils.convertToEthersBN(args);
 
@@ -115,12 +118,12 @@ var execute = {
 
       params.to = address;
       params = utils.merge(constructor.class_defaults, params);
+      params = utils.merge(constructor.payloadExtension, params);
 
       return new Promise(async (resolve, reject) => {
         let result;
         try {
           await constructor.detectNetwork();
-          params = utils.merge(constructor.network.payloadExtension, params);
           args = utils.convertToEthersBN(args);
           result = await fn(...args).call(params, defaultBlock);
           result = reformat.numbers.call(
@@ -165,6 +168,7 @@ var execute = {
           args = utils.convertToEthersBN(args);
           params.to = address;
           params.data = fn ? fn(...args).encodeABI() : undefined;
+          params = utils.merge(constructor.payloadExtension, params);
 
           execute.getGasEstimate
             .call(constructor, params, network.blockLimit)
@@ -209,6 +213,7 @@ var execute = {
 
     var contract = new web3.eth.Contract(abi);
     params.data = contract.deploy(options).encodeABI();
+    params = utils.merge(constructor.payloadExtension, params);
 
     execute.getGasEstimate
       .call(constructor, params, blockLimit)
