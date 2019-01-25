@@ -71,18 +71,21 @@ var util = {
 
   // Spins up ganache with arbitrary options and
   // binds web3 & a contract instance to it.
-  setUpProvider: async function(instance, options) {
+  setUpProvider: async function(instance, options, httpPort) {
     options = options || {};
     Object.assign(options, { logger: log, ws: true });
 
     var provider;
     var web3 = new Web3();
 
-    process.env.GETH
-      ? (provider = new Web3.providers.HttpProvider("http://localhost:8545", {
-          keepAlive: false
-        }))
-      : (provider = ganache.provider(options));
+    if (process.env.GETH || httpPort) {
+      const port = httpPort || 8545;
+      provider = new Web3.providers.HttpProvider(`http://localhost:${port}`, {
+        keepAlive: false
+      });
+    } else {
+      provider = ganache.provider(options);
+    }
 
     web3.setProvider(provider);
     instance.setProvider(provider);
@@ -98,6 +101,22 @@ var util = {
       web3: web3,
       accounts: accs
     };
+  },
+
+  setUpServer: async function(instance, options, port) {
+    options = options || {};
+    Object.assign(options, { logger: log, ws: false });
+
+    return new Promise((resolve, reject) => {
+      server = ganache.server(options);
+      server.listen(port, async function(err) {
+        if (err) reject(err);
+
+        const result = await util.setUpProvider(instance, options, port);
+
+        resolve(Object.assign({}, result, { server: server }));
+      });
+    });
   },
 
   // RPC Methods
