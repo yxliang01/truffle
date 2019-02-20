@@ -93,11 +93,12 @@ var execute = {
 
   /**
    * Executes method as .call and processes optional `defaultBlock` argument.
-   * @param  {Function} fn         method
-   * @param  {Object}   methodABI  Function ABI segment w/ inputs & outputs keys.
-   * @return {Promise}             Return value of the call.
+   * @param  {Function} fn                  method
+   * @param  {Object}   methodABI           Function ABI segment w/ inputs & outputs keys.
+   * @param  {Object}   instanceParameters  An object containing the deployed `address` and `payloadExtension`
+   * @return {Promise}                      Return value of the call.
    */
-  call: function(fn, methodABI, address) {
+  call: function(fn, methodABI, instanceParameters) {
     var constructor = this;
 
     return function() {
@@ -116,9 +117,9 @@ var execute = {
         params = args.pop();
       }
 
-      params.to = address;
+      params.to = instanceParameters.address;
       params = utils.merge(constructor.class_defaults, params);
-      params = utils.merge(constructor.payloadExtension, params);
+      params = utils.merge(instanceParameters.payloadExtension, params);
 
       return new Promise(async (resolve, reject) => {
         let result;
@@ -141,12 +142,12 @@ var execute = {
 
   /**
    * Executes method as .send
-   * @param  {Function} fn         Method to invoke
-   * @param  {Object}   methodABI  Function ABI segment w/ inputs & outputs keys.
-   * @param  {String}   address    Deployed address of the targeted instance
-   * @return {PromiEvent}          Resolves a transaction receipt (via the receipt handler)
+   * @param  {Function} fn                  Method to invoke
+   * @param  {Object}   methodABI           Function ABI segment w/ inputs & outputs keys.
+   * @param  {object}   instanceParameters  An object containing the deployed `address` and `payloadExtension`
+   * @return {PromiEvent}                   Resolves a transaction receipt (via the receipt handler)
    */
-  send: function(fn, methodABI, address) {
+  send: function(fn, methodABI, instanceParameters) {
     var constructor = this;
     var web3 = constructor.web3;
 
@@ -166,9 +167,9 @@ var execute = {
         .detectNetwork()
         .then(network => {
           args = utils.convertToEthersBN(args);
-          params.to = address;
+          params.to = instanceParameters.address;
           params.data = fn ? fn(...args).encodeABI() : undefined;
-          params = utils.merge(constructor.payloadExtension, params);
+          params = utils.merge(instanceParameters.payloadExtension, params);
 
           execute.getGasEstimate
             .call(constructor, params, network.blockLimit)

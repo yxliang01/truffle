@@ -33,7 +33,12 @@ if (typeof Web3 === "object" && Object.keys(Web3).length === 0) {
     instance.address = contract.options.address;
     instance.transactionHash = contract.transactionHash;
     instance.contract = contract;
-    instance.payloadExtension = constructor.payloadExtension;
+    instance.payloadExtension = Object.assign({}, constructor.payloadExtension);
+
+    instanceParametersForExecute = {
+      address: instance.address,
+      payloadExtension: instance.payloadExtension
+    };
 
     // User defined methods, overloaded methods, events
     instance.abi.forEach(function(item) {
@@ -52,32 +57,32 @@ if (typeof Web3 === "object" && Object.keys(Web3).length === 0) {
                   constructor,
                   web3Method,
                   item,
-                  instance.address
+                  instanceParametersForExecute
                 ))
               : (fn = execute.send.call(
                   constructor,
                   web3Method,
                   item,
-                  instance.address
+                  instanceParametersForExecute
                 ));
 
             fn.call = execute.call.call(
               constructor,
               web3Method,
               item,
-              instance.address
+              instanceParametersForExecute
             );
             fn.sendTransaction = execute.send.call(
               constructor,
               web3Method,
               item,
-              instance.address
+              instanceParametersForExecute
             );
             fn.estimateGas = execute.estimate.call(
               constructor,
               web3Method,
               item,
-              instance.address
+              instanceParametersForExecute
             );
             fn.request = execute.request.call(
               constructor,
@@ -119,7 +124,7 @@ if (typeof Web3 === "object" && Object.keys(Web3).length === 0) {
       constructor,
       null,
       null,
-      instance.address
+      instanceParametersForExecute
     );
 
     // Prefer user defined `send`

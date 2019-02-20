@@ -205,7 +205,6 @@ module.exports = {
   },
   payloadExtension: {
     get: function() {
-      return this._json.payloadExtension;
       var payloadExtension = this.network.payloadExtension;
 
       if (payloadExtension == null) {
@@ -219,8 +218,6 @@ module.exports = {
       return payloadExtension;
     },
     set: function(val) {
-      this._json.payloadExtension = val;
-      return;
       if (val == null) {
         throw new Error(
           "Cannot set deployed payloadExtension; malformed value: " + val

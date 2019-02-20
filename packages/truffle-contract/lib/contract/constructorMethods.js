@@ -60,7 +60,6 @@ module.exports = Contract => {
           payloadExtensionValues
         );
       }
-      constructor.payloadExtension = filteredPayloadExtension;
 
       // Promievent and flag that allows instance to resolve (rather than just receipt)
       var context = {
@@ -72,6 +71,7 @@ module.exports = Contract => {
       constructor
         .detectNetwork()
         .then(network => {
+          constructor.payloadExtension = filteredPayloadExtension;
           utils.checkLibraries.apply(constructor);
           return execute.deploy.call(
             constructor,
@@ -259,6 +259,13 @@ module.exports = Contract => {
     setNetwork: function(network_id) {
       if (!network_id) return;
       this.network_id = network_id + "";
+
+      if (!this.hasNetwork(network_id)) {
+        this._json.networks[network_id] = {
+          events: {},
+          links: {}
+        };
+      }
     },
 
     setWallet: function(wallet) {
