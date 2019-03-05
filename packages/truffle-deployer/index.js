@@ -4,6 +4,7 @@ const DeferredChain = require("./src/deferredchain");
 const Deployment = require("./src/deployment");
 const link = require("./src/actions/link");
 const create = require("./src/actions/new");
+const Legacy = require("truffle-legacy-system");
 
 class Deployer extends Deployment {
   constructor(options) {
@@ -21,6 +22,7 @@ class Deployer extends Deployment {
     this.provider = options.provider;
     this.basePath = options.basePath || process.cwd();
     this.known_contracts = {};
+    this.legacy = options.legacy || false;
 
     (options.contracts || []).forEach(
       contract => (this.known_contracts[contract.contract_name] = contract)
@@ -40,6 +42,14 @@ class Deployer extends Deployment {
   deploy() {
     const args = Array.prototype.slice.call(arguments);
     const contract = args.shift();
+
+    if (this.legacy) {
+      if (Array.isArray(contract)) {
+        return this.queueOrExec(Legacy.deployMany(contract, this));
+      } else {
+        return this.queueOrExec(Legacy.deploy(contract, args, this));
+      }
+    }
 
     return this.queueOrExec(this.executeDeployment(contract, args, this));
   }

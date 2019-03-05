@@ -54,7 +54,15 @@
       "format": "date-time"
     },
     "devdoc": { "$ref": "#/definitions/NatSpec" },
-    "userdoc": { "$ref": "#/definitions/NatSpec" }
+    "userdoc": { "$ref": "#/definitions/NatSpec" },
+    "legacy": {
+      "type": "boolean",
+      "description": "Pass-through flag that specifies if this contract should use Truffle's legacy migrations"
+    },
+    "quorum": {
+      "type": "boolean",
+      "description": "Pass-through flag that specifies if this contract should use Quorum workarounds"
+    }
   },
   "required": [
     "abi"
@@ -62,6 +70,7 @@
   "patternProperties": {
     "^x-": { "anyOf": [
       { "type": "string" },
+      { "type": "boolean" },
       { "type": "number" },
       { "type": "object" },
       { "type": "array" }

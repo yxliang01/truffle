@@ -2,6 +2,16 @@ var command = {
   command: "test",
   description: "Run JavaScript and Solidity tests",
   builder: {
+    "legacy": {
+      describe: "Run legacy tests",
+      type: "boolean",
+      default: false
+    },
+    "quorum": {
+      describe: "Enable Quorum support; also enables --legacy",
+      type: "boolean",
+      default: false
+    },
     "show-events": {
       describe: "Show all test logs",
       type: "boolean",
@@ -10,13 +20,21 @@ var command = {
   },
   help: {
     usage:
-      "truffle test [<test_file>] [--compile-all] [--network <name>] [--verbose-rpc] [--show-events]",
+      "truffle test [<test_file>] [--legacy] [--quorum] [--compile-all] [--network <name>] [--verbose-rpc] [--show-events]",
     options: [
       {
         option: "<test_file>",
         description:
           "Name of the test file to be run. Can include path information if the file " +
           "does not exist in the\n                    current directory."
+      },
+      {
+        option: "--legacy",
+        description: "Run legacy tests"
+      },
+      {
+        option: "--quorum",
+        description: "Enable Quorum support; also enables --legacy"
       },
       {
         option: "--compile-all",
@@ -52,6 +70,11 @@ var command = {
     var fs = require("fs");
     var copy = require("../copy");
     var Environment = require("../environment");
+
+    // Quorum support requires legacy migrations
+    if (options.quorum === true) {
+      options.legacy = true;
+    }
 
     var config = Config.detect(options);
 
@@ -95,7 +118,7 @@ var command = {
         function cleanup() {
           var args = arguments;
           // Ensure directory cleanup.
-          temp.cleanup(function() {
+          temp.cleanup(() => {
             // Ignore cleanup errors.
             done.apply(null, args);
             if (ipcDisconnect) {
