@@ -1,5 +1,4 @@
 var debug = require("debug")("provider:wrapper"); // eslint-disable-line no-unused-vars
-var ProviderError = require("./error");
 
 module.exports = {
   /*
@@ -20,10 +19,10 @@ module.exports = {
     options.verbose = options.verbose || options.verboseRpc || false;
 
     /* create wrapper functions for before/after send */
-    var preHook = this.preHook(options);
-    var postHook = this.postHook(options);
+    const preHook = this.preHook(options);
+    const postHook = this.postHook(options);
 
-    var originalSend = provider.send.bind(provider);
+    const originalSend = provider.send.bind(provider);
 
     /* overwrite method */
     provider.send = this.send(originalSend, preHook, postHook);
@@ -69,23 +68,17 @@ module.exports = {
 
   // after send/sendAsync
   postHook: function(options) {
-    return function(payload, error, result) {
-      if (error != null) {
-        // wrap errors in internal error class
-        error = new ProviderError(error.message, options);
-        return [payload, error, result];
-      }
-
+    return function(sendResult) {
       if (options.verbose) {
         options.logger.log(
           " <   " +
-            JSON.stringify(result, null, 2)
+            JSON.stringify(sendResult, null, 2)
               .split("\n")
               .join("\n <   ")
         );
       }
 
-      return [payload, error, result];
+      return sendResult;
     };
   },
 
@@ -100,17 +93,10 @@ module.exports = {
    * Return the wrapped function matching the original function's signature.
    */
   send: function(originalSend, preHook, postHook) {
-    return function(payload, callback) {
-      payload = preHook(payload);
-
-      originalSend(payload, function(error, result) {
-        var modified = postHook(payload, error, result);
-        payload = modified[0];
-        error = modified[1];
-        result = modified[2];
-
-        callback(error, result);
-      });
+    return async function(payload) {
+      const preHookResult = preHook(payload);
+      const sendResult = originalSend(preHookResult);
+      return postHook(sendResult);
     };
   }
 };
