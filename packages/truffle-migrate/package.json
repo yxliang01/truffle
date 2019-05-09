@@ -23,7 +23,7 @@
     "async": "2.6.1",
     "emittery": "^0.4.0",
     "node-dir": "0.1.17",
-    "web3": "1.0.0-beta.53",
+    "web3": "1.0.0-beta.55",
     "truffle-config": "^1.1.10",
     "truffle-deployer": "^3.0.15",
     "truffle-expect": "^0.0.8",
