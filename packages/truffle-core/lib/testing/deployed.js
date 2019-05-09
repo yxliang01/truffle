@@ -1,14 +1,17 @@
 // Using web3 for its sha function...
 var Web3 = require("web3");
+const semver = require("semver");
+const Native = require("truffle-compile/compilerSupplier/loadingStrategies/Native");
 
 var Deployed = {
-  makeSolidityDeployedAddressesLibrary: function(mapping) {
+  makeSolidityDeployedAddressesLibrary: function(
+    mapping,
+    { solc: { version } }
+  ) {
     var self = this;
 
     var source = "";
-    source +=
-      "pragma solidity >=0.4.15 <0.6.0; \n\n library DeployedAddresses {" +
-      "\n";
+    source += "pragma solidity ^0.5.0; \n\n library DeployedAddresses {" + "\n";
 
     Object.keys(mapping).forEach(function(name) {
       var address = mapping[name];
@@ -31,6 +34,13 @@ var Deployed = {
     });
 
     source += "}";
+
+    if (version) {
+      if (version === "native") version = new Native().load().version();
+      const v = semver.coerce(version);
+      if (semver.lt(v, "0.5.0")) source = source.replace(/ payable/gm, "");
+      source = source.replace(/0.5.0/gm, v);
+    }
 
     return source;
   },

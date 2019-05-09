@@ -1,6 +1,8 @@
-contract('Example', function(accounts) {
+const Example = artifacts.require("Example");
+
+contract("Example", function() {
   it("should assert true", function(done) {
-    var example = Example.deployed();
+    Example.deployed();
     assert.isTrue(true);
     done();
   });

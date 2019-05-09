@@ -1,3 +1,6 @@
+import debugModule from "debug";
+const debug = debugModule("debugger:session:reducers");
+
 import { combineReducers } from "redux";
 
 import data from "lib/data/reducers";
@@ -8,45 +11,83 @@ import controller from "lib/controller/reducers";
 
 import * as actions from "./actions";
 
-export const WAITING = "WAITING";
-export const ACTIVE = "ACTIVE";
-export const ERROR = "ERROR";
-
-export function status(state = WAITING, action) {
+function ready(state = false, action) {
   switch (action.type) {
     case actions.READY:
-      return ACTIVE;
+      debug("readying");
+      return true;
 
-    case actions.ERROR:
-      return { error: action.error };
+    case actions.WAIT:
+      return false;
 
     default:
       return state;
   }
 }
 
-export function transaction(state = {}, action) {
-  switch(action.type) {
+function projectInfoComputed(state = false, action) {
+  switch (action.type) {
+    case actions.PROJECT_INFO_COMPUTED:
+      return true;
+    default:
+      return state;
+  }
+}
+
+function lastLoadingError(state = null, action) {
+  switch (action.type) {
+    case actions.ERROR:
+      debug("error: %o", action.error);
+      return action.error;
+
+    case actions.WAIT:
+      return null;
+
+    default:
+      return state;
+  }
+}
+
+function transaction(state = {}, action) {
+  switch (action.type) {
     case actions.SAVE_TRANSACTION:
       return action.transaction;
+    case actions.UNLOAD_TRANSACTION:
+      return {};
     default:
       return state;
   }
 }
 
-export function receipt(state = {}, action) {
-  switch(action.type) {
+function receipt(state = {}, action) {
+  switch (action.type) {
     case actions.SAVE_RECEIPT:
       return action.receipt;
+    case actions.UNLOAD_TRANSACTION:
+      return {};
+    default:
+      return state;
+  }
+}
+
+function block(state = {}, action) {
+  switch (action.type) {
+    case actions.SAVE_BLOCK:
+      return action.block;
+    case actions.UNLOAD_TRANSACTION:
+      return {};
     default:
       return state;
   }
 }
 
 const session = combineReducers({
-  status,
+  ready,
+  lastLoadingError,
+  projectInfoComputed,
   transaction,
-  receipt
+  receipt,
+  block
 });
 
 const reduceState = combineReducers({

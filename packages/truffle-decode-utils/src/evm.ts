@@ -11,7 +11,9 @@ export namespace EVM {
   export const WORD_SIZE = Constants.WORD_SIZE;
   export const ADDRESS_SIZE = Constants.ADDRESS_SIZE;
   export const SELECTOR_SIZE = Constants.SELECTOR_SIZE;
+  export const PC_SIZE = Constants.PC_SIZE;
   export const MAX_WORD = Constants.MAX_WORD;
+  export const ZERO_ADDRESS = Constants.ZERO_ADDRESS;
 
   //beware of using this for generic strings! (it's fine for bytestrings, or
   //strings representing numbers) if you want to use this on a generic string,

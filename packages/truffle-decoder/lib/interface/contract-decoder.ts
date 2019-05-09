@@ -1,6 +1,7 @@
 import debugModule from "debug";
 const debug = debugModule("decoder:interface:contract-decoder");
 
+import * as DecodeUtils from "truffle-decode-utils";
 import AsyncEventEmitter from "async-eventemitter";
 import Web3 from "web3";
 import { ContractObject } from "truffle-contract-schema/spec";
@@ -11,6 +12,8 @@ import * as storage from "../allocate/storage";
 import { StoragePointer, isStoragePointer } from "../types/pointer";
 import { StorageAllocations, StorageMemberAllocations, StorageMemberAllocation } from "../types/allocation";
 import { Slot, isWordsLength } from "../types/storage";
+import { DecoderRequest, isStorageRequest, isCodeRequest } from "../types/request";
+import { ContractBeingDecodedHasNoNodeError } from "../types/errors";
 import decode from "../decode";
 import { Definition as DefinitionUtils, EVM, AstDefinition, AstReferences } from "truffle-decode-utils";
 import { BlockType, Transaction } from "web3/eth/types";
@@ -54,6 +57,8 @@ interface DecodedVariable {
 interface ContractState {
   name: string;
   balance: BN;
+  nonce: BN;
+  code: string;
   variables: {
     [name: string]: DecodedVariable
   };
@@ -75,18 +80,28 @@ export interface ContractMapping {
   [nodeId: number]: ContractObject;
 };
 
-export function getContractNode(contract: ContractObject): AstDefinition {
-  for (let j = 0; j < contract.ast.nodes.length; j++) {
-    const contractNode = contract.ast.nodes[j];
-    const nodeMatchesContract =
-      contractNode.name === contract.contractName ||
-      contractNode.name === contract.contract_name;
-    if (contractNode.nodeType === "ContractDefinition" && nodeMatchesContract) {
-      return contractNode;
-    }
-  }
+export interface StorageCache {
+  [block: number]: {
+    [address: string]: {
+      [slot: string]: Uint8Array;
+    };
+  };
+}
 
-  return undefined;
+export interface CodeCache {
+  [block: number]: {
+    [address: string]: Uint8Array;
+  };
+}
+
+//note: may return undefined
+function getContractNode(contract: ContractObject): AstDefinition {
+  return (contract.ast || {nodes: []}).nodes.find(
+    (contractNode: AstDefinition) =>
+    contractNode.nodeType === "ContractDefinition"
+    && (contractNode.name === contract.contractName
+      || contractNode.name === contract.contract_name)
+  );
 }
 
 export default class TruffleContractDecoder extends AsyncEventEmitter {
@@ -96,10 +111,13 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
   private contractNode: AstDefinition;
   private contractNetwork: string;
   private contractAddress: string;
+  private contractCode: string;
   private relevantContracts: ContractObject[];
 
   private contracts: ContractMapping = {};
   private contractNodes: AstReferences = {};
+  private contexts: DecodeUtils.Contexts.DecoderContexts = {};
+  private context: DecodeUtils.Contexts.DecoderContext;
 
   private referenceDeclarations: AstReferences;
   private storageAllocations: StorageAllocations;
@@ -113,7 +131,10 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
 
   private mappingKeys: Slot[] = [];
 
-  constructor(contract: ContractObject, relevantContracts: ContractObject[], provider: Provider) {
+  private storageCache: StorageCache = {};
+  private codeCache: CodeCache = {};
+
+  constructor(contract: ContractObject, relevantContracts: ContractObject[], provider: Provider, address: string) {
     super();
 
     this.web3 = new Web3(provider);
@@ -121,23 +142,55 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
     this.contract = contract;
     this.relevantContracts = relevantContracts;
 
-    this.contractNetwork = Object.keys(this.contract.networks)[0];
-    this.contractAddress = this.contract.networks[this.contractNetwork].address;
-
+    if(address !== undefined) {
+      this.contractAddress = address;
+    }
     this.contractNode = getContractNode(this.contract);
+    if(this.contractNode === undefined) {
+      throw new ContractBeingDecodedHasNoNodeError();
+    }
 
     this.contracts[this.contractNode.id] = this.contract;
     this.contractNodes[this.contractNode.id] = this.contractNode;
+    if(this.contract.deployedBinary) { //just to be safe
+      this.context = this.makeContext(this.contract, this.contractNode);
+      this.contexts[this.contractNode.id] = this.context;
+    }
     abiDecoder.addABI(this.contract.abi);
-    this.relevantContracts.forEach((relevantContract) => {
-      let node: AstDefinition = getContractNode(relevantContract);
-      this.contracts[node.id] = relevantContract;
-      this.contractNodes[node.id] = node;
+
+    for(let relevantContract of this.relevantContracts) {
       abiDecoder.addABI(relevantContract.abi);
-    });
+      let node: AstDefinition = getContractNode(relevantContract);
+      if(node !== undefined) {
+        this.contracts[node.id] = relevantContract;
+        this.contractNodes[node.id] = node;
+        if(relevantContract.deployedBinary) {
+          this.contexts[node.id] = this.makeContext(relevantContract, node);
+        }
+      }
+    }
+
+    this.contexts = <DecodeUtils.Contexts.DecoderContexts>DecodeUtils.Contexts.normalizeContexts(this.contexts);
   }
 
-  public init(): void {
+  private makeContext(contract: ContractObject, node: AstDefinition) {
+    //we want the non-constructor context here
+    return {
+      contractName: contract.contractName,
+      binary: contract.deployedBytecode,
+      contractId: node.id,
+      contractKind: node.contractKind,
+      isConstructor: false,
+      abi: DecodeUtils.Contexts.abiToFunctionAbiWithSignatures(contract.abi)
+    };
+  }
+
+  public async init(): Promise<void> {
+    this.contractNetwork = (await this.web3.eth.net.getId()).toString();
+    if(this.contractAddress === undefined) {
+      this.contractAddress = this.contract.networks[this.contractNetwork].address;
+    }
+
     debug("init called");
     this.referenceDeclarations = general.getReferenceDeclarations(Object.values(this.contractNodes));
 
@@ -155,12 +208,58 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
     debug("done with allocation");
     this.stateVariableReferences = this.storageAllocations[this.contractNode.id].members;
     debug("stateVariableReferences %O", this.stateVariableReferences);
+
+    this.contractCode = await this.web3.eth.getCode(this.contractAddress);
+  }
+
+  private async decodeVariable(variable: StorageMemberAllocation, block: number): Promise<DecodedVariable> {
+    const info: EvmInfo = {
+      state: {
+        stack: [],
+        storage: {},
+        memory: new Uint8Array(0)
+      },
+      mappingKeys: this.mappingKeys,
+      referenceDeclarations: this.referenceDeclarations,
+      storageAllocations: this.storageAllocations,
+      contexts: this.contexts,
+      currentContext: this.context
+    };
+
+    const decoder: IterableIterator<any> = decode(variable.definition, variable.pointer, info);
+
+    let result: IteratorResult<any> = decoder.next();
+    while(!result.done) {
+      let request = <DecoderRequest>(result.value);
+      let response: Uint8Array;
+      if(isStorageRequest(request)) {
+        response = await this.getStorage(this.contractAddress, request.slot, block);
+      }
+      else if(isCodeRequest(request)) {
+        response = await this.getCode(request.address, block);
+      }
+      //note: one of the above conditionals *must* be true by the type system.
+      result = decoder.next(response);
+    }
+    //at this point, result.value holds the final value
+
+    return {
+      name: variable.definition.name,
+      type: DefinitionUtils.typeClass(variable.definition),
+      value: result.value
+    };
   }
 
   public async state(block: BlockType = "latest"): Promise<ContractState | undefined> {
+    let blockNumber = typeof block === "number"
+      ? block
+      : (await this.web3.eth.getBlock(block)).number;
+
     let result: ContractState = {
       name: this.contract.contractName,
-      balance: new BN(await this.web3.eth.getBalance(this.contractAddress)),
+      code: this.contractCode,
+      balance: new BN(await this.web3.eth.getBalance(this.contractAddress, blockNumber)),
+      nonce: new BN(await this.web3.eth.getTransactionCount(this.contractAddress, blockNumber)),
       variables: {}
     };
 
@@ -168,28 +267,11 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
 
     for(const variable of Object.values(this.stateVariableReferences)) {
 
-      const info: EvmInfo = {
-        state: {
-          stack: [],
-          storage: {},
-          memory: new Uint8Array(0),
-          calldata: new Uint8Array(0)
-        },
-        mappingKeys: this.mappingKeys,
-        referenceDeclarations: this.referenceDeclarations,
-        storageAllocations: this.storageAllocations,
-        variables: this.stateVariableReferences
-      };
-
       debug("about to decode %s", variable.definition.name);
-      const val = await decode(variable.definition, variable.pointer, info, this.web3, this.contractAddress);
+      const decodedVariable = await this.decodeVariable(variable, blockNumber);
       debug("decoded");
 
-      result.variables[variable.definition.name] = {
-        name: variable.definition.name,
-        type: DefinitionUtils.typeClass(variable.definition),
-        value: val
-      };
+      result.variables[variable.definition.name] = decodedVariable;
 
       debug("var %O", result.variables[variable.definition.name]);
     }
@@ -198,19 +280,9 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
   }
 
   public async variable(nameOrId: string | number, block: BlockType = "latest"): Promise<DecodedVariable | undefined> {
-
-    const info: EvmInfo = {
-      state: {
-        stack: [],
-        storage: {},
-        memory: new Uint8Array(0),
-        calldata: new Uint8Array(0)
-      },
-      mappingKeys: this.mappingKeys,
-      referenceDeclarations: this.referenceDeclarations,
-      storageAllocations: this.storageAllocations,
-      variables: this.stateVariableReferences
-    };
+    let blockNumber = typeof block === "number"
+      ? block
+      : (await this.web3.eth.getBlock(block)).number;
 
     let variable: StorageMemberAllocation;
     if(typeof nameOrId === "number")
@@ -226,15 +298,52 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
       return undefined;
     }
 
-    debug("about to decode %o", nameOrId);
-    const value = await decode(variable.definition, variable.pointer, info, this.web3, this.contractAddress);
-    debug("decoded");
+    return await this.decodeVariable(variable, blockNumber);
+  }
 
-    return {
-      name: variable.definition.name,
-      type: DefinitionUtils.typeClass(variable.definition),
-      value
-    };
+  private async getStorage(address: string, slot: BN, block: number): Promise<Uint8Array> {
+    //first, set up any preliminary layers as needed
+    if(this.storageCache[block] === undefined) {
+      this.storageCache[block] = {};
+    }
+    if(this.storageCache[block][address] === undefined) {
+      this.storageCache[block][address] = {};
+    }
+    //now, if we have it cached, just return it
+    if(this.storageCache[block][address][slot.toString()] !== undefined) {
+      return this.storageCache[block][address][slot.toString()];
+    }
+    //otherwise, get it, cache it, and return it
+    let word = DecodeUtils.Conversion.toBytes(
+      await this.web3.eth.getStorageAt(
+        address,
+        slot,
+        block
+      ),
+      DecodeUtils.EVM.WORD_SIZE
+    );
+    this.storageCache[block][address][slot.toString()] = word;
+    return word;
+  }
+
+  private async getCode(address: string, block: number): Promise<Uint8Array> {
+    //first, set up any preliminary layers as needed
+    if(this.codeCache[block] === undefined) {
+      this.codeCache[block] = {};
+    }
+    //now, if we have it cached, just return it
+    if(this.codeCache[block][address] !== undefined) {
+      return this.codeCache[block][address];
+    }
+    //otherwise, get it, cache it, and return it
+    let code = DecodeUtils.Conversion.toBytes(
+      await this.web3.eth.getCode(
+        address,
+        block
+      )
+    );
+    this.codeCache[block][address] = code;
+    return code;
   }
 
   //EXAMPLE: to watch a.b.c[d][e], use watchMappingKey("a", "b", "c", d, e)
@@ -419,8 +528,8 @@ export default class TruffleContractDecoder extends AsyncEventEmitter {
             index = rawIndex;
             break;
           case "address":
-	    index = Web3.utils.toChecksumAddress(rawIndex);
-	    break;
+            index = Web3.utils.toChecksumAddress(rawIndex);
+            break;
           case "int":
           case "uint":
             if(rawIndex instanceof BN) {

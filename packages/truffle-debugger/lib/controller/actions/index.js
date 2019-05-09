@@ -1,5 +1,5 @@
 export const ADVANCE = "ADVANCE";
-export function advance(count = 1) {
+export function advance(count) {
   return { type: ADVANCE, count };
 }
 
@@ -28,15 +28,18 @@ export function reset() {
   return { type: RESET };
 }
 
-export const INTERRUPT = "INTERRUPT";
+export const INTERRUPT = "CONTROLLER_INTERRUPT";
 export function interrupt() {
   return { type: INTERRUPT };
 }
 
 export const CONTINUE = "CONTINUE";
-export function continueUntilBreakpoint() {
+export function continueUntilBreakpoint(breakpoints) {
   //"continue" is not a legal name
-  return { type: CONTINUE };
+  return {
+    type: CONTINUE,
+    breakpoints
+  };
 }
 
 export const ADD_BREAKPOINT = "ADD_BREAKPOINT";
@@ -59,6 +62,13 @@ export const REMOVE_ALL_BREAKPOINTS = "REMOVE_ALL_BREAKPOINTS";
 export function removeAllBreakpoints() {
   return {
     type: REMOVE_ALL_BREAKPOINTS
+  };
+}
+
+export const START_STEPPING = "START_STEPPING";
+export function startStepping() {
+  return {
+    type: START_STEPPING
   };
 }
 

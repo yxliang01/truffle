@@ -15,6 +15,10 @@ import { prefixName } from "lib/helpers";
 import * as actions from "../actions";
 import * as session from "lib/session/actions";
 
+import BN from "bn.js";
+import Web3 from "web3"; //just for utils!
+import * as DecodeUtils from "truffle-decode-utils";
+
 import Web3Adapter from "../adapter";
 
 function* fetchTransactionInfo(adapter, { txHash }) {
@@ -32,38 +36,64 @@ function* fetchTransactionInfo(adapter, { txHash }) {
   yield put(actions.receiveTrace(trace));
 
   let tx = yield apply(adapter, adapter.getTransaction, [txHash]);
+  debug("tx %O", tx);
   let receipt = yield apply(adapter, adapter.getReceipt, [txHash]);
+  debug("receipt %O", receipt);
+  let block = yield apply(adapter, adapter.getBlock, [tx.blockNumber]);
+  debug("block %O", block);
 
   yield put(session.saveTransaction(tx));
   yield put(session.saveReceipt(receipt));
+  yield put(session.saveBlock(block));
+
+  //these ones get grouped together for convenience
+  let solidityBlock = {
+    coinbase: block.miner,
+    difficulty: new BN(block.difficulty),
+    gaslimit: new BN(block.gasLimit),
+    number: new BN(block.number),
+    timestamp: new BN(block.timestamp)
+  };
 
   if (tx.to != null) {
-    yield put(actions.receiveCall({ address: tx.to, data: tx.input }));
-    return;
+    yield put(
+      actions.receiveCall({
+        address: tx.to,
+        data: tx.input,
+        storageAddress: tx.to,
+        sender: tx.from,
+        value: new BN(tx.value),
+        gasprice: new BN(tx.gasPrice),
+        block: solidityBlock
+      })
+    );
+  } else {
+    let storageAddress = Web3.utils.isAddress(receipt.contractAddress)
+      ? receipt.contractAddress
+      : DecodeUtils.EVM.ZERO_ADDRESS;
+    yield put(
+      actions.receiveCall({
+        binary: tx.input,
+        storageAddress,
+        status: receipt.status,
+        sender: tx.from,
+        value: new BN(tx.value),
+        gasprice: new BN(tx.gasPrice),
+        block: solidityBlock
+      })
+    );
   }
-
-  if (receipt.contractAddress) {
-    yield put(actions.receiveCall({ binary: tx.input }));
-    return;
-  }
-
-  throw new Error(
-    "Could not find contract associated with transaction. " +
-      "Please make sure you're debugging a transaction that executes a " +
-      "contract function or creates a new contract."
-  );
 }
 
-function* fetchBinary(adapter, { address }) {
+function* fetchBinary(adapter, { address, block }) {
   debug("fetching binary for %s", address);
-  let binary = yield apply(adapter, adapter.getDeployedCode, [address]);
+  let binary = yield apply(adapter, adapter.getDeployedCode, [address, block]);
 
   debug("received binary for %s", address);
   yield put(actions.receiveBinary(address, binary));
 }
 
-export function* inspectTransaction(txHash, provider) {
-  yield put(actions.init(provider));
+export function* inspectTransaction(txHash) {
   yield put(actions.inspect(txHash));
 
   let action = yield take([actions.RECEIVE_TRACE, actions.ERROR_WEB3]);
@@ -77,17 +107,39 @@ export function* inspectTransaction(txHash, provider) {
     return { error: action.error };
   }
 
-  let { address, binary, data } = yield take(actions.RECEIVE_CALL);
+  let {
+    address,
+    binary,
+    data,
+    storageAddress,
+    status,
+    sender,
+    value,
+    gasprice,
+    block
+  } = yield take(actions.RECEIVE_CALL);
   debug("received call");
 
-  return { trace, address, binary, data };
+  return {
+    trace,
+    address,
+    binary,
+    data,
+    storageAddress,
+    status,
+    sender,
+    value,
+    gasprice,
+    block
+  };
 }
 
-export function* obtainBinaries(addresses) {
+//NOTE: the block argument is optional
+export function* obtainBinaries(addresses, block) {
   let tasks = yield all(addresses.map(address => fork(receiveBinary, address)));
 
   debug("requesting binaries");
-  yield all(addresses.map(address => put(actions.fetchBinary(address))));
+  yield all(addresses.map(address => put(actions.fetchBinary(address, block))));
 
   let binaries = [];
   binaries = yield all(tasks.map(task => join(task)));
@@ -104,6 +156,10 @@ function* receiveBinary(address) {
   debug("got binary for %s", address);
 
   return binary;
+}
+
+export function* init(provider) {
+  yield put(actions.init(provider));
 }
 
 export function* saga() {

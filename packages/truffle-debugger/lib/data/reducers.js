@@ -3,11 +3,10 @@ const debug = debugModule("debugger:data:reducers");
 
 import { combineReducers } from "redux";
 
-import { stableKeccak256 } from "lib/helpers";
-
 import * as actions from "./actions";
 
 import { slotAddress } from "truffle-decoder";
+import { makeAssignment } from "lib/helpers";
 import { Conversion, Definition, EVM } from "truffle-decode-utils";
 
 const DEFAULT_SCOPES = {
@@ -102,9 +101,26 @@ const info = combineReducers({
   allocations
 });
 
+const GLOBAL_ASSIGNMENTS = [
+  [{ builtin: "msg" }, { special: "msg" }],
+  [{ builtin: "tx" }, { special: "tx" }],
+  [{ builtin: "block" }, { special: "block" }],
+  [{ builtin: "this" }, { special: "this" }],
+  [{ builtin: "now" }, { special: "timestamp" }] //we don't have an alias "now"
+].map(([idObj, ref]) => makeAssignment(idObj, ref));
+
 const DEFAULT_ASSIGNMENTS = {
-  byId: {},
-  byAstId: {}
+  byId: Object.assign(
+    {}, //we start out with all globals assigned
+    ...GLOBAL_ASSIGNMENTS.map(assignment => ({ [assignment.id]: assignment }))
+  ),
+  byAstId: {}, //no regular variables assigned at start
+  byBuiltin: Object.assign(
+    {}, //again, all globals start assigned
+    ...GLOBAL_ASSIGNMENTS.map(assignment => ({
+      [assignment.builtin]: [assignment.id] //yes, that's a 1-element array
+    }))
+  )
 };
 
 function assignments(state = DEFAULT_ASSIGNMENTS, action) {
@@ -113,48 +129,23 @@ function assignments(state = DEFAULT_ASSIGNMENTS, action) {
     case actions.MAP_PATH_AND_ASSIGN:
       debug("action.type %O", action.type);
       debug("action.assignments %O", action.assignments);
-      return Object.values(action.assignments.byId).reduce(
-        (acc, assignment) => {
-          let { id, astId } = assignment; //we don't need the rest
-          return {
-            byId: {
-              ...acc.byId,
-              [id]: assignment
-            },
-            byAstId: {
-              ...acc.byAstId,
-              [astId]: [...new Set([...(acc.byAstId[astId] || []), id])]
-              //we use a set for uniqueness
-            }
-          };
-        },
-        state
-      );
-
-    case actions.LEARN_ADDRESS:
-      let { dummyAddress, address } = action;
-      return {
-        byId: Object.assign(
-          {},
-          ...Object.values(state.byId).map(assignment => {
-            let newAssignment = learnAddress(assignment, dummyAddress, address);
-            return {
-              [newAssignment.id]: newAssignment
-            };
-          })
-        ),
-        byAstId: Object.assign(
-          {},
-          ...Object.entries(state.byAstId).map(([astId]) => {
-            return {
-              [astId]: state.byAstId[astId].map(
-                id => learnAddress(state.byId[id], dummyAddress, address).id
-                //this above involves some recomputation but oh well
-              )
-            };
-          })
-        )
-      };
+      return Object.values(action.assignments).reduce((acc, assignment) => {
+        let { id, astId } = assignment;
+        //we assume for now that only ordinary variables will be assigned this
+        //way, and not globals; globals are handled in DEFAULT_ASSIGNMENTS
+        return {
+          ...acc,
+          byId: {
+            ...acc.byId,
+            [id]: assignment
+          },
+          byAstId: {
+            ...acc.byAstId,
+            [astId]: [...new Set([...(acc.byAstId[astId] || []), id])]
+            //we use a set for uniqueness
+          }
+        };
+      }, state);
 
     case actions.RESET:
       return DEFAULT_ASSIGNMENTS;
@@ -164,28 +155,7 @@ function assignments(state = DEFAULT_ASSIGNMENTS, action) {
   }
 }
 
-function learnAddress(assignment, dummyAddress, address) {
-  if (assignment.dummyAddress === dummyAddress) {
-    //we can assume here that the object being
-    //transformed has a very particular form
-    let newIdObj = {
-      astId: assignment.astId,
-      address
-    };
-    let newId = stableKeccak256(newIdObj);
-    return {
-      id: newId,
-      ref: assignment.ref,
-      astId: assignment.astId,
-      address
-    };
-  } else {
-    return assignment;
-  }
-}
-
 const DEFAULT_PATHS = {
-  decodingStarted: 0,
   byAddress: {}
 };
 
@@ -195,15 +165,6 @@ const DEFAULT_PATHS = {
 //which is fine, as that's all we need it for.
 function mappedPaths(state = DEFAULT_PATHS, action) {
   switch (action.type) {
-    case actions.MAP_KEY_DECODING:
-      debug(
-        "decoding started: %d",
-        state.decodingStarted + (action.started ? 1 : -1)
-      );
-      return {
-        ...state,
-        decodingStarted: state.decodingStarted + (action.started ? 1 : -1)
-      };
     case actions.MAP_PATH_AND_ASSIGN:
       let { address, slot, typeIdentifier, parentType } = action;
       //how this case works: first, we find the spot in our table (based on
@@ -304,19 +265,6 @@ function mappedPaths(state = DEFAULT_PATHS, action) {
 
     case actions.RESET:
       return DEFAULT_PATHS;
-
-    case actions.LEARN_ADDRESS:
-      debug("action %o", action);
-      return {
-        ...state,
-        byAddress: Object.assign(
-          {},
-          ...Object.entries(state.byAddress).map(([address, types]) => ({
-            [address == action.dummyAddress ? action.address : address]: types
-            //using == due to string/number discrepancy
-          }))
-        )
-      };
 
     default:
       return state;

@@ -43,26 +43,9 @@ export function mapPathAndAssign(
   };
 }
 
-export const MAP_KEY_DECODING = "MAP_KEY_DECODING";
-export function mapKeyDecoding(started) {
-  return {
-    type: MAP_KEY_DECODING,
-    started
-  };
-}
-
 export const RESET = "DATA_RESET";
 export function reset() {
   return { type: RESET };
-}
-
-export const LEARN_ADDRESS = "LEARN_ADDRESS";
-export function learnAddress(dummyAddress, address) {
-  return {
-    type: LEARN_ADDRESS,
-    dummyAddress,
-    address
-  };
 }
 
 export const DEFINE_TYPE = "DEFINE_TYPE";
