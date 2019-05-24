@@ -137,7 +137,7 @@ var Test = {
           throw reason;
         });
 
-        mocha.run(function(failures) {
+        self.mochaRunner = mocha.run(function(failures) {
           config.logger.warn = warn;
 
           callback(failures);
@@ -244,7 +244,7 @@ var Test = {
     test_resolver,
     runner
   }) {
-    return new Promise(function(accept) {
+    return new Promise(accept => {
       global.web3 = web3;
       global.assert = chai.assert;
       global.expect = chai.expect;
@@ -255,6 +255,11 @@ var Test = {
       };
       global.__debug = async (method, ...args) => {
         const { CLIDebugger } = require("./debug");
+
+        // HACK turn off timeouts for the current runnable
+        // note: we don't turn it back on because it doesn't work...
+        // tests that take a long time _after_ debugging won't timeout
+        this.mochaRunner.currentRunnable.timeout(0);
 
         const invoke = async (method, ...args) => {
           if (method) {
