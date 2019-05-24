@@ -123,13 +123,13 @@ var Test = {
         );
       })
       .then(function() {
-        return self.setJSTestGlobals(
+        return self.setJSTestGlobals({
           config,
           web3,
           accounts,
           test_resolver,
           runner
-        );
+        });
       })
       .then(function() {
         // Finally, run mocha.
@@ -237,7 +237,13 @@ var Test = {
     });
   },
 
-  setJSTestGlobals: function(config, web3, accounts, test_resolver, runner) {
+  setJSTestGlobals: function({
+    config,
+    web3,
+    accounts,
+    test_resolver,
+    runner
+  }) {
     return new Promise(function(accept) {
       global.web3 = web3;
       global.assert = chai.assert;
