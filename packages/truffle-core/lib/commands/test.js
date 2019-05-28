@@ -6,11 +6,20 @@ var command = {
       describe: "Show all test logs",
       type: "boolean",
       default: false
+    },
+    "debug": {
+      describe: "Enable in-test debugging",
+      type: "boolean",
+      default: false
+    },
+    "debug-global": {
+      describe: "Specify debug global function name",
+      default: "debug"
     }
   },
   help: {
     usage:
-      "truffle test [<test_file>] [--compile-all] [--network <name>] [--verbose-rpc] [--show-events]",
+      "truffle test [<test_file>] [--compile-all] [--network <name>] [--verbose-rpc] [--show-events] [--debug] [--debug-global <identifier>]",
     options: [
       {
         option: "<test_file>",
@@ -38,6 +47,17 @@ var command = {
       {
         option: "--show-events",
         description: "Log all contract events."
+      },
+      {
+        option: "--debug",
+        description:
+          "Provides global debug() function for in-test debugging. " +
+          "JS tests only; implies --compile-all."
+      },
+      {
+        option: "--debug-global <identifier>",
+        description:
+          'Specify global identifier for debug function. Default: "debug"'
       }
     ]
   },
@@ -65,6 +85,11 @@ var command = {
       config.network = "test";
     } else {
       Environment.detect(config).catch(done);
+    }
+
+    // enables in-test debug() interrupt, forcing compileAll
+    if (config.debug) {
+      config.compileAll = true;
     }
 
     var ipcDisconnect;

@@ -76,7 +76,7 @@ var Test = {
       mocha.addFile(file);
     });
 
-    var dependency_paths = [];
+    var compilation;
     var testContracts = [];
     var accounts = [];
     var runner;
@@ -103,8 +103,8 @@ var Test = {
           test_resolver
         );
       })
-      .then(function(paths) {
-        dependency_paths = paths;
+      .then(function(result) {
+        compilation = result;
 
         testContracts = sol_tests.map(function(test_file_path) {
           return test_resolver.require(test_file_path);
@@ -118,7 +118,7 @@ var Test = {
         return self.defineSolidityTests(
           mocha,
           testContracts,
-          dependency_paths,
+          compilation.outputs.solc,
           runner
         );
       })
@@ -128,7 +128,8 @@ var Test = {
           web3,
           accounts,
           test_resolver,
-          runner
+          runner,
+          compilation
         });
       })
       .then(function() {
@@ -200,8 +201,7 @@ var Test = {
             }),
             function(err, result) {
               if (err) return reject(err);
-              const paths = result.outputs.solc;
-              accept(paths);
+              accept(result);
             }
           );
         }
@@ -242,7 +242,8 @@ var Test = {
     web3,
     accounts,
     test_resolver,
-    runner
+    runner,
+    compilation
   }) {
     return new Promise(accept => {
       global.web3 = web3;
@@ -253,11 +254,22 @@ var Test = {
           return test_resolver.require(import_path);
         }
       };
-      global.__debug = async (...args) => {
+
+      global[config.debugGlobal] = async operation => {
+        if (!config.debug) {
+          config.logger.log(
+            "Warning: Attempting to use in-test debugger without the " +
+              "`truffle test --debug` flag"
+          );
+          return operation;
+        }
+
         // wrapped inside function so as not to load debugger on every test
         const { CLIDebugHook } = require("./debug/mocha");
 
-        return await new CLIDebugHook(config, this.mochaRunner).debug(...args);
+        const hook = new CLIDebugHook(config, compilation, this.mochaRunner);
+
+        return await hook.debug(operation);
       };
 
       var template = function(tests) {
