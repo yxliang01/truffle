@@ -3,7 +3,7 @@ const path = require("path");
 const Profiler = require("./profiler");
 const CompilerSupplier = require("./compilerSupplier");
 const expect = require("truffle-expect");
-const find_contracts = require("truffle-contract-sources");
+const findContracts = require("truffle-contract-sources");
 const Config = require("truffle-config");
 const { run } = require("./run");
 const normalize = require("./normalize");
@@ -37,6 +37,7 @@ const compile = function(sources, options, callback) {
     return;
   }
 
+  // otherwise, passthrough to new format, returning Promise
   return run(sources, options);
 };
 
@@ -44,7 +45,7 @@ const compile = function(sources, options, callback) {
 // quiet: Boolean. Suppress output. Defaults to false.
 // strict: Boolean. Return compiler warnings as errors. Defaults to false.
 compile.all = function(options, callback) {
-  find_contracts(options.contracts_directory, function(err, files) {
+  findContracts(options.contracts_directory, function(err, files) {
     if (err) return callback(err);
 
     options.paths = files;
