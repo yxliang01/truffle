@@ -23,5 +23,12 @@ module.exports = function normalize(options) {
     options.compilers.solc.settings.optimizer = options.solc.optimizer;
   }
 
+  // Certain situations result in `{}` as a value for compilationTargets
+  // Previous implementations treated any value lacking `.length` as equivalent
+  // to `[]`
+  if (!options.compilationTargets || !options.compilationTargets.length) {
+    options.compilationTargets = [];
+  }
+
   return options;
 };
