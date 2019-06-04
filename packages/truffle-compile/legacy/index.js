@@ -1,13 +1,13 @@
-const debug = require("debug")("compile"); // eslint-disable-line no-unused-vars
+const debug = require("debug")("compile:legacy"); // eslint-disable-line no-unused-vars
 const path = require("path");
-const { promisify } = require("util");
-const Profiler = require("./profiler");
-const CompilerSupplier = require("./compilerSupplier");
+const Profiler = require("../profiler");
+const CompilerSupplier = require("../compilerSupplier");
 const expect = require("truffle-expect");
 const findContracts = require("truffle-contract-sources");
 const Config = require("truffle-config");
-const { run } = require("./run");
-const { normalizeOptions } = require("./legacy/options");
+const { run } = require("../run");
+const { normalizeOptions } = require("./options");
+const { shimOutput } = require("./shims");
 
 // Most basic of the compile commands. Takes a hash of sources, where
 // the keys are file or module paths and the values are the bodies of
@@ -19,17 +19,31 @@ const { normalizeOptions } = require("./legacy/options");
 //   quiet: false,
 //   logger: console
 // }
-const compile = async function(sources, options) {
-  return await run(sources, normalizeOptions(options));
+const compile = function(sources, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+
+  // account for legacy settings
+  options = normalizeOptions(options);
+
+  run(sources, options)
+    .then(shimOutput) // shim result
+    .then(([...result]) => callback(null, ...result))
+    .catch(callback);
 };
 
 // contracts_directory: String. Directory where .sol files can be found.
 // quiet: Boolean. Suppress output. Defaults to false.
 // strict: Boolean. Return compiler warnings as errors. Defaults to false.
-compile.all = async function(options) {
-  const paths = await promisify(findContracts)(options.contracts_directory);
+compile.all = function(options, callback) {
+  findContracts(options.contracts_directory, function(err, files) {
+    if (err) return callback(err);
 
-  return await compile.with_dependencies(Object.assign({}, options, { paths }));
+    options.paths = files;
+    compile.with_dependencies(options, callback);
+  });
 };
 
 // contracts_directory: String. Directory where .sol files can be found.
@@ -38,15 +52,24 @@ compile.all = async function(options) {
 //      in the build directory to see what needs to be compiled.
 // quiet: Boolean. Suppress output. Defaults to false.
 // strict: Boolean. Return compiler warnings as errors. Defaults to false.
-compile.necessary = async function(options) {
+compile.necessary = function(options, callback) {
   options.logger = options.logger || console;
 
-  const paths = await promisify(Profiler.updated)(options);
+  Profiler.updated(options, function(err, updated) {
+    if (err) return callback(err);
 
-  return await compile.with_dependencies(Object.assign({}, options, { paths }));
+    if (updated.length === 0 && options.quiet !== true) {
+      return callback(null, [], {});
+    }
+
+    options.paths = updated;
+    compile.with_dependencies(options, callback);
+  });
 };
 
-compile.with_dependencies = async function(options) {
+compile.with_dependencies = function(options, callback) {
+  var self = this;
+
   options.logger = options.logger || console;
   options.contracts_directory = options.contracts_directory || process.cwd();
 
@@ -59,31 +82,25 @@ compile.with_dependencies = async function(options) {
 
   var config = Config.default().merge(options);
 
-  const { allSources, required } = await new Promise((accept, reject) => {
-    Profiler.required_sources(
-      config.with({
-        paths: options.paths,
-        base_path: options.contracts_directory,
-        resolver: options.resolver
-      }),
-      (err, allSources, required) => {
-        if (err) {
-          return reject(err);
-        }
+  Profiler.required_sources(
+    config.with({
+      paths: options.paths,
+      base_path: options.contracts_directory,
+      resolver: options.resolver
+    }),
+    (err, allSources, required) => {
+      if (err) return callback(err);
 
-        return accept({ allSources, required });
-      }
-    );
-  });
+      var hasTargets = required.length;
 
-  var hasTargets = required.length;
+      hasTargets
+        ? self.display(required, options)
+        : self.display(allSources, options);
 
-  hasTargets
-    ? this.display(required, options)
-    : this.display(allSources, options);
-
-  options.compilationTargets = required;
-  return await compile(allSources, options);
+      options.compilationTargets = required;
+      compile(allSources, options, callback);
+    }
+  );
 };
 
 compile.display = function(paths, options) {
