@@ -212,7 +212,7 @@ module.exports = {
       const supplier = new CompilerSupplier(options.compilers.solc);
       supplier
         .load()
-        .then(async ([solc, parserSolc]) => {
+        .then(async ({ solc, parserSolc }) => {
           // Get all the source code
           const resolved = await self.resolveAllSources(
             resolver,
