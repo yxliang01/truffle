@@ -2,7 +2,7 @@ const debug = require("debug")("workflow-compile");
 const mkdirp = require("mkdirp");
 const { promisify } = require("util");
 const Config = require("truffle-config");
-const solcCompile = require("truffle-compile");
+const solcCompile = require("truffle-compile/legacy");
 const vyperCompile = require("truffle-compile-vyper");
 const externalCompile = require("truffle-external-compile");
 const expect = require("truffle-expect");
@@ -110,14 +110,13 @@ const Contracts = {
         const compile = SUPPORTED_COMPILERS[compiler];
         if (!compile) throw new Error("Unsupported compiler: " + compiler);
 
-        const compileFunc =
+        const compileFunc = multiPromisify(
           config.all === true || config.compileAll === true
             ? compile.all
-            : compile.necessary;
+            : compile.necessary
+        );
 
-        let [contracts, output, compilerUsed] = await multiPromisify(
-          compileFunc
-        )(config);
+        let [contracts, output, compilerUsed] = await compileFunc(config);
 
         if (compilerUsed) {
           config.compilersInfo[compilerUsed.name] = {
