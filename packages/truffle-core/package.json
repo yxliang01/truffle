@@ -79,6 +79,7 @@
   ],
   "devDependencies": {
     "glob": "^7.1.2",
+    "ipfsd-ctl": "^0.42.4",
     "memorystream": "^0.3.1",
     "truffle-blockchain-utils": "^0.0.10"
   },
