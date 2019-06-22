@@ -134,6 +134,8 @@ const Test = {
     if (mochaConfig.useColors == null) {
       mochaConfig.useColors = true;
     }
+    
+    mochaConfig.reporter = 'json';
 
     var mocha = new Mocha(mochaConfig);
 
